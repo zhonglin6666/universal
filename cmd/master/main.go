@@ -20,9 +20,11 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/genesisdb/genesis/util"
+	"github.com/ngaut/log"
 	"github.com/spf13/cobra"
+
 	"github.com/zhonglin6666/universal/config"
+	"github.com/zhonglin6666/universal/util"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -32,14 +34,16 @@ var mainCmd = &cobra.Command{
 	Long:  "test demo",
 
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("mainCmd args: %v, len: %v\n", args, len(args))
 		if len(args) == 1 {
 			cmd.Help()
 			return
 		}
 
-		file, err := cmd.Flags().GetString("f")
+		file, err := cmd.Flags().GetString("config-file")
 		if err != nil {
-			return err
+			fmt.Printf("mainCmd Run get config file err: %v\n", err)
+			return
 		}
 
 		startMain(file)
@@ -59,21 +63,24 @@ func main() {
 }
 
 func startMain(file string) {
-	// set log info
-	log.SetLevelByString(cfg.GetString("Log", "Level"))
-	log.SetOutputByName(cfg.GetString("Log", "Path"))
-	log.SetRotateByDay()
-
+	fmt.Printf("startMain file: %v\n", file)
 	if !util.IsFileExists(file) {
 		panic("the config not exist, panic return")
 	}
 
-	cfg, err := config.LoadConfig(*configFile)
+	cfg, err := config.LoadConfig(file)
 	if err != nil {
 		panic(fmt.Sprintf("load config failure, err:%v", err))
 	}
+
+	fmt.Println(cfg.GetString("Default", "NodeHost"))
+
+	log.SetLevelByString(cfg.GetString("Log", "Level"))
+	log.SetOutputByName(cfg.GetString("Log", "Path"))
+	log.SetRotateByDay()
+
 }
 
 func init() {
-	mainCmd.Flags().StringVarP(&file, "file", "f", "", "config file")
+	mainCmd.Flags().StringP("config-file", "f", "/etc/smart/master.cfg", "config file")
 }
