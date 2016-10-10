@@ -23,11 +23,11 @@ import (
 	"github.com/ngaut/log"
 	"github.com/spf13/cobra"
 
+	"github.com/zhonglin6666/universal/api"
 	"github.com/zhonglin6666/universal/config"
 	"github.com/zhonglin6666/universal/util"
 )
 
-// RootCmd represents the base command when called without any subcommands
 var mainCmd = &cobra.Command{
 	Use:   os.Args[0],
 	Short: "A test demo",
@@ -79,6 +79,15 @@ func startMain(file string) {
 	log.SetOutputByName(cfg.GetString("Log", "Path"))
 	log.SetRotateByDay()
 
+	startAPIServer(cfg.GetInt("Default", "APIPort"))
+}
+
+func startAPIServer(port int) error {
+	log.Infof("main start api server, listen on port: %v", port)
+	hr := api.HandlerRouter(api.MasterRouter)
+	http.Handle("/", hr)
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 
 func init() {

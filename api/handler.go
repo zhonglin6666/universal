@@ -13,7 +13,7 @@ const (
 
 var MasterRouter = map[string]map[string]func(http.ResponseWriter, *http.Request){
 	"GET": {
-		"db/test": getTest,
+		"db/master/test": getMasterTest,
 	},
 
 	"POST": {},
@@ -39,7 +39,7 @@ func HandlerRouter(mRouter map[string]map[string]func(http.ResponseWriter, *http
 
 func handlerRequest(handlerFunc func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Info("server API handRequest: %s", r.URL)
+		log.Infof("server API handRequest: %s", r.URL)
 		handlerFunc(w, r)
 	}
 }
