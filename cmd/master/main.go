@@ -16,75 +16,64 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+	"runtime"
 
+	"github.com/genesisdb/genesis/util"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"github.com/zhonglin6666/universal/imp"
+	"github.com/zhonglin6666/universal/config"
 )
 
-var cfgFile = "/home/lin/test.cfg"
-var name string
-var age int
-
-var GlobalViper = viper.New()
-
 // RootCmd represents the base command when called without any subcommands
-var RootCmd = &cobra.Command{
-	Use:   "demo",
+var mainCmd = &cobra.Command{
+	Use:   os.Args[0],
 	Short: "A test demo",
 	Long:  "test demo",
 
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(name) == 0 {
+		if len(args) == 1 {
 			cmd.Help()
 			return
 		}
-		imp.Show(name, age)
+
+		file, err := cmd.Flags().GetString("f")
+		if err != nil {
+			return err
+		}
+
+		startMain(file)
 	},
 }
 
 func main() {
-	if err := RootCmd.Execute(); err != nil {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	go func() {
+		fmt.Printf("%s", http.ListenAndServe(":9999", nil))
+	}()
+
+	if err := mainCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
+}
 
-	fmt.Println("111111111111 ", GlobalViper.GetString("ContentDir"))
+func startMain(file string) {
+	// set log info
+	log.SetLevelByString(cfg.GetString("Log", "Level"))
+	log.SetOutputByName(cfg.GetString("Log", "Path"))
+	log.SetRotateByDay()
+
+	if !util.IsFileExists(file) {
+		panic("the config not exist, panic return")
+	}
+
+	cfg, err := config.LoadConfig(*configFile)
+	if err != nil {
+		panic(fmt.Sprintf("load config failure, err:%v", err))
+	}
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-
-	// RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.demo.yaml)")
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	RootCmd.Flags().StringVarP(&name, "name", "n", "AAAA", "person's name")
-	RootCmd.Flags().IntVarP(&age, "age", "a", 0, "person's age")
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		GlobalViper.SetConfigFile(cfgFile)
-	}
-
-	GlobalViper.SetConfigName("test.cfg") // name of config file (without extension)
-	GlobalViper.AddConfigPath("$HOME")    // adding home directory as first search path
-	GlobalViper.AutomaticEnv()            // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := GlobalViper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", GlobalViper.ConfigFileUsed())
-	}
-
-	GlobalViper.SetDefault("ContentDir", "content")
-
-	fmt.Println("1111111111111111111111111 ", GlobalViper.GetString("ContentDir"))
+	mainCmd.Flags().StringVarP(&file, "file", "f", "", "config file")
 }
