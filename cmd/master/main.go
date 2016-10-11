@@ -34,7 +34,6 @@ var mainCmd = &cobra.Command{
 	Long:  "test demo",
 
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("mainCmd args: %v, len: %v\n", args, len(args))
 		if len(args) == 1 {
 			cmd.Help()
 			return
@@ -46,7 +45,7 @@ var mainCmd = &cobra.Command{
 			return
 		}
 
-		startMain(file)
+		start(file)
 	},
 }
 
@@ -62,8 +61,8 @@ func main() {
 	}
 }
 
-func startMain(file string) {
-	fmt.Printf("startMain file: %v\n", file)
+func start(file string) {
+	fmt.Printf("start main with config file: %v\n", file)
 	if !util.IsFileExists(file) {
 		panic("the config not exist, panic return")
 	}
@@ -73,19 +72,20 @@ func startMain(file string) {
 		panic(fmt.Sprintf("load config failure, err:%v", err))
 	}
 
-	fmt.Println(cfg.GetString("Default", "NodeHost"))
-
 	log.SetLevelByString(cfg.GetString("Log", "Level"))
 	log.SetOutputByName(cfg.GetString("Log", "Path"))
 	log.SetRotateByDay()
 
 	startAPIServer(cfg.GetInt("Default", "APIPort"))
+
+	//m := &master.Master{}
+	//m.Start()
 }
 
 func startAPIServer(port int) error {
-	log.Infof("main start api server, listen on port: %v", port)
-	hr := api.HandlerRouter(api.MasterRouter)
-	http.Handle("/", hr)
+	log.Infof("init api server, listen on port: %v", port)
+	router := api.HandlerRouter(api.MasterRouter)
+	http.Handle("/", router)
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
